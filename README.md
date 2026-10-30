@@ -105,11 +105,45 @@ exceptionSeam {
 
 `./gradlew checkExceptionSeams` runs the analysis; `check` depends on it.
 
+### Configuring subprojects from the root build
+
+In a multi-project build, apply the plugin in the root `plugins { }` block (this puts it on the build classpath), then
+apply and configure it for every subproject from `subprojects { }`:
+
+```kotlin
+// root build.gradle.kts
+plugins {
+    java
+    id("io.github.johncoleman-thoughtworks.exception-seam") version "1.0.0"
+}
+
+exceptionSeam {
+    failOnSeverity.set("NONE")
+    reportFormats.addAll("console", "html")
+}
+
+subprojects {
+    apply(plugin = "java")
+    apply(plugin = "io.github.johncoleman-thoughtworks.exception-seam")
+
+    extensions.configure<com.johncolemantw.exceptionseam.ExceptionSeamExtension> {
+        failOnSeverity.set("NONE")
+        reportFormats.addAll("console", "html")
+    }
+}
+```
+
+The type-safe `exceptionSeam { }` accessor is not generated inside `subprojects { }` for a plugin applied with
+`apply(plugin = ...)`, so configure it through `extensions.configure<ExceptionSeamExtension>` using the fully qualified
+class name. The root project and each subproject have their own extension, so the settings must be repeated for both, as
+above. Each subproject then gets its own `checkExceptionSeams` task and report.
+
 ## Using the plugin in a project
 
 Apply it in each module's own `plugins { }` block. That is also what makes the `exceptionSeam { }` accessor available in
 Kotlin DSL; applying it from `subprojects { }`, `apply(plugin = ...)` or an init script gives "Unresolved reference
-'exceptionSeam'".
+'exceptionSeam'" unless you configure it via `extensions.configure` (see
+[Configuring subprojects from the root build](#configuring-subprojects-from-the-root-build)).
 
 | Route | Use it for |
 |---|---|
